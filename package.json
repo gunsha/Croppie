@@ -1,5 +1,5 @@
 {
-    "name": "croppie",
+    "name": "@gonzaller/croppie",
     "version": "2.6.6",
     "description": "A simple javascript image cropper",
     "main": "croppie.js",
@@ -15,7 +15,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/Foliotek/Croppie.git"
+        "url": "git+https://github.com/gunsha/Croppie.git"
     },
     "keywords": [
         "crop",
@@ -29,7 +29,7 @@
     ],
     "license": "MIT",
     "bugs": {
-        "url": "https://github.com/Foliotek/Croppie/issues"
+        "url": "https://github.com/gunsha/Croppie/issues"
     },
     "homepage": "http://foliotek.github.io/Croppie",
     "files": [
