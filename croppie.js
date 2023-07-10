@@ -166,8 +166,7 @@
                 evt.initCustomEvent(event, params.bubbles, params.cancelable, params.detail);
                 return evt;
             }
-
-            CustomEvent.prototype = window.Event ? window.Event.prototype : Object.create(null);
+            CustomEvent.prototype = window.Event.prototype;
             window.CustomEvent = CustomEvent;
         })();
     }
@@ -280,51 +279,6 @@
         for (var prop in styles) {
             el.style[prop] = styles[prop];
         }
-    }
-
-    function createCanvas(width, height) {
-        var canvasWidth = width || 0;
-        var canvasHeight = height || 0;
-
-        if ('OffscreenCanvas' in window) {
-            return new OffscreenCanvas(canvasWidth, canvasHeight);
-        }
-
-        var canvas = document.createElement('canvas');
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
-        return canvas;
-    }
-
-    function toOnscreenCanvas(canvas) {
-        if ('OffscreenCanvas' in window && canvas instanceof OffscreenCanvas) {
-            var copy = document.createElement('canvas');
-            copy.width = canvas.width;
-            copy.height = canvas.height;
-            copy.getContext('2d').drawImage(canvas, 0, 0);
-            return copy;
-        }
-
-        return canvas;
-    }
-
-    function canvasToBase64(canvas, format, quality) {
-        return toOnscreenCanvas(canvas).toDataURL(format, quality);
-    }
-
-    function canvasToBlob(canvas, format, quality) {
-        if (canvas.convertToBlob) {
-            return Promise.resolve(canvas.convertToBlob({ type: format, quality: quality }));
-        }
-        return new Promise(function (resolve) {
-            canvas.toBlob(
-                function (blob) {
-                    resolve(blob);
-                },
-                format,
-                quality
-            );
-        });
     }
 
     function addClass(el, c) {
@@ -556,7 +510,7 @@
         overlay = self.elements.overlay = document.createElement('div');
 
         if (self.options.useCanvas) {
-            self.elements.canvas = createCanvas();
+            self.elements.canvas = document.createElement('canvas');
             self.elements.preview = self.elements.canvas;
         } else {
             self.elements.preview = img;
@@ -1358,12 +1312,15 @@
             width = right - left,
             height = bottom - top,
             circle = data.circle,
+            canvas = document.createElement('canvas'),
+            ctx = canvas.getContext('2d'),
             startX = 0,
             startY = 0,
             canvasWidth = data.outputWidth || width,
-            canvasHeight = data.outputHeight || height,
-            canvas = createCanvas(canvasWidth, canvasHeight),
-            ctx = canvas.getContext('2d');
+            canvasHeight = data.outputHeight || height;
+
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
 
         if (data.backgroundColor) {
             ctx.fillStyle = data.backgroundColor;
@@ -1459,11 +1416,20 @@
     }
 
     function _getBase64Result(data) {
-        return canvasToBase64(_getCanvas.call(this, data), data.format, data.quality);
+        return _getCanvas.call(this, data).toDataURL(data.format, data.quality);
     }
 
     function _getBlobResult(data) {
-        return canvasToBlob(_getCanvas.call(this, data), data.format, data.quality);
+        var self = this;
+        return new Promise(function (resolve) {
+            _getCanvas.call(self, data).toBlob(
+                function (blob) {
+                    resolve(blob);
+                },
+                data.format,
+                data.quality
+            );
+        });
     }
 
     function _replaceImage(img) {
@@ -1630,7 +1596,7 @@
         prom = new Promise(function (resolve) {
             switch (resultType.toLowerCase()) {
                 case 'rawcanvas':
-                    resolve(toOnscreenCanvas(_getCanvas.call(self, data)));
+                    resolve(_getCanvas.call(self, data));
                     break;
                 case 'canvas':
                 case 'base64':
@@ -1661,9 +1627,7 @@
 
         self.data.orientation = getExifOffset(self.data.orientation, deg);
         drawCanvas(canvas, self.elements.img, self.data.orientation);
-        self._originalImageWidth = canvas.width;
-        self._originalImageHeight = canvas.height;
-        _updateCenterPoint.call(self, true);
+        _updateCenterPoint.call(self);
         _updateZoomLimits.call(self);
         _centerImage.call(self, true);
 
